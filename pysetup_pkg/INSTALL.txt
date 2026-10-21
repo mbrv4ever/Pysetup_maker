@@ -1,0 +1,59 @@
+PySetup_Maker - installatie en gebruik
+=======================================
+
+Wat doet het:
+  Maakt van een Python-project (.py + .ico) een single-exe
+  installer-pakket. De installer:
+    - heeft een eigen UI (welkom, map kiezen, voortgang)
+    - pakt de Nuitka-gecompileerde app uit
+    - maakt start-menu en desktop snelkoppeling
+    - schrijft een uninstall.exe in de install-map
+    - registreert de app bij Windows "Programma's en onderdelen"
+
+
+Vereisten:
+  - Python 3.10+
+  - PySide6 (full)
+  - Nuitka (al geïnstalleerd op de bouw-PC)
+
+
+Stappen:
+  1. pip install --upgrade PySide6 nuitka
+  2. python pysetup_maker.py          (vanaf bron starten)
+     of
+     build_pysetup_maker.bat          (Nuitka build naar exe)
+
+
+Gebruik:
+  1. Klik "Map kiezen..." en kies de map met je project.
+     PySetup_Maker scant automatisch naar:
+       - main.py / app.py / <mapnaam>.py / __main__.py / etc.
+       - .ico bestand
+       - andere bestanden en mappen (als extras voorgesteld)
+  2. Pas waar nodig de auto-detectie aan.
+  3. Geef je setup een naam (= naam van de output .exe).
+  4. Klik "Maken".
+  5. De installer-exe komt in <projectmap>/installer/<naam>.exe
+
+
+Hoe werkt het intern:
+  Stap 1: Nuitka --standalone bouwt jouw app -> app.dist/
+  Stap 2: app.dist + extras + icon worden in payload.zip gezet
+  Stap 3: Een Python-script "installer_stub.py" wordt gerenderd
+          met de payload als base64-string erin. Daarbij komt
+          ook de uninstaller-code als string.
+  Stap 4: Nuitka --standalone --onefile compileert die stub
+          tot 1 enkele installer-exe.
+
+  Bij dubbel-klik op die installer:
+    - Wizard opent
+    - Gebruiker kiest install-map
+    - Payload wordt gedecodeerd en uitgepakt
+    - uninstall.py krijgt het echte install-pad ingevuld en
+      wordt (indien Nuitka op doel-PC) gecompileerd tot
+      uninstall.exe (anders: uninstall.bat als fallback)
+    - PowerShell maakt de snelkoppelingen
+    - Registry-key onder HKCU\Software\Microsoft\Windows\...
+      \CurrentVersion\Uninstall\<naam> wordt aangemaakt
+
+  Verwijderen via Windows "Apps en functies" werkt dan ook.
